@@ -1,0 +1,171 @@
+#include <LiquidCrystal.h>
+#include <util/delay.h>
+LiquidCrystal lcd(A0, A1, A2, A3, A4, A5);
+char ocitaj_taster()
+{
+  char taster = 0;
+  unsigned char row;
+  MCUCR &= ~0x10;
+  PORTD = 0x0f; 
+  for(row = 0x80; row != 0x08; row >>= 1)
+  {
+    DDRD = row;
+	_delay_ms(2);
+    switch(row | ((~PIND) & 0x0f))
+    {
+      case 0x88:
+      	taster = '1'; break;
+      case 0x84:
+      	taster = '2'; break;
+      case 0x82:
+      	taster = '3'; break;
+      case 0x81:
+      	taster = 'A'; break;
+	  case 0x48:
+      	taster = '4'; break;
+      case 0x44:
+      	taster = '5'; break;
+      case 0x42:
+      	taster = '6'; break;
+      case 0x41:
+      	taster = 'B'; break;
+	  case 0x28:
+      	taster = '7'; break;
+      case 0x24:
+      	taster = '8'; break;
+      case 0x22:
+      	taster = '9'; break;
+      case 0x21:
+      	taster = 'C'; break;
+	  case 0x18:
+      	taster = '*'; break;
+      case 0x14:
+      	taster = '0'; break;
+      case 0x12:
+      	taster = '#'; break;
+      case 0x11:
+      	taster = 'D'; break;
+    }
+  }
+  return taster;
+}
+bool pocni = false;
+byte srce[] = {
+      B00000,
+      B00000,
+      B11011,
+      B11111,
+      B11111,
+      B01110,
+      B00100,
+      B00000
+      };
+byte karo[] = {
+      B00000,
+      B00100,
+      B01110,
+      B11111,
+      B11111,
+      B01110,
+      B00100,
+      B00000
+      };
+byte pik[] = {
+      B00000,
+      B00100,
+      B01110,
+      B11111,
+      B11111,
+      B00100,
+      B00000,
+      B00000
+      };
+byte tref[] = {
+      B01110,
+      B01110,
+      B11111,
+      B11111,
+      B11111,
+      B00100,
+      B01110,
+      B00000
+      };
+int randbr[4];
+int pozicija = 0;
+int resenje[4] = {-1,-1,-1,-1};
+int main()
+{
+  	lcd.begin(16, 2);
+    lcd.createChar(0, srce);
+    lcd.createChar(1, karo);
+    lcd.createChar(2, pik);
+    lcd.createChar(3, tref);
+    lcd.home();
+	while(1)
+    { 
+      if(pocni == false){
+        lcd.clear();
+  		lcd.print("Pritisni *");  
+      }      
+	  char taster = ocitaj_taster();
+      if (taster == '*')
+      {
+        pocni = true;
+        lcd.clear();
+        randbr[0] = random(0,4);
+        randbr[1] = random(0,4);
+        randbr[2] = random(0,4);
+        randbr[3] = random(0,4);
+        lcd.clear();
+        lcd.write(byte(randbr[0]));
+        lcd.write(byte(randbr[1]));
+        lcd.write(byte(randbr[2]));
+        lcd.write(byte(randbr[3]));
+        _delay_ms(2000);
+        lcd.clear();
+        lcd.blink();
+      }
+      if(taster == '4'){
+        pozicija--;
+        if(pozicija < 0) pozicija = 0;
+        taster = '0'; //reseno poskakivanje ovako 
+         _delay_ms(500);
+      }
+      if(taster == '6'){
+        pozicija++;
+        if(pozicija>3) pozicija = 3;
+        taster = '0';
+         _delay_ms(500);
+      }
+      if(taster == '2'){
+        resenje[pozicija]++;
+        if(resenje[pozicija] > 3) resenje[pozicija] = 3;
+        lcd.write(byte(resenje[pozicija]));
+        taster = '0';
+         _delay_ms(500);
+      }
+      if(taster == '8'){
+        resenje[pozicija]--;
+        if(resenje[pozicija] < 0) resenje[pozicija] = 0;
+        lcd.write(byte(resenje[pozicija]));
+        taster = '0';
+         _delay_ms(500);
+      }
+      if(taster == '5'){
+        lcd.clear();
+        bool tacno = false;
+        int counter=0;
+        for(int i = 0; i < 4; i++){
+          if(resenje[i] == randbr[i]){
+            counter++;
+             if(counter==3)
+               tacno=true;
+          }
+        }
+        if(tacno == true) lcd.print("tacno resenje");
+        else lcd.print("pogresno resenje");
+      }
+      lcd.setCursor(pozicija, 0);
+    }
+  	return 0;
+}
